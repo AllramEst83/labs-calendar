@@ -1,15 +1,18 @@
 /**
  * _shared/cors.mts — CORS headers helper for Netlify Functions.
  *
- * Allows localhost during dev and the deployed Netlify URL(s) in production.
+ * Allowed origins come from CORS_ALLOWED_ORIGINS (comma-separated in .env).
+ * Netlify URL, DEPLOY_URL, and DEPLOY_PRIME_URL are added automatically when set.
  */
 
+function parseCommaSeparatedOrigins(value: string | undefined): string[] {
+  if (!value?.trim()) return [];
+  return value.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
 function getAllowedOrigins(): string[] {
-  const origins = new Set([
-    'http://localhost:8888',
-    'http://localhost:5173',
-    'http://127.0.0.1:8888',
-    'http://127.0.0.1:5173',
+  const origins = new Set<string>([
+    ...parseCommaSeparatedOrigins(process.env.CORS_ALLOWED_ORIGINS),
   ]);
 
   for (const key of ['URL', 'DEPLOY_URL', 'DEPLOY_PRIME_URL'] as const) {
