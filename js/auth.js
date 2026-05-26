@@ -11,6 +11,7 @@ import { showToast } from './toast.js';
 
 const PIN_LENGTH = 6;
 let onSuccessCallback = null;
+let isSubmitting = false;
 
 /** Initialize the auth screen and wire up all events. */
 export function initAuth(onSuccess) {
@@ -108,16 +109,17 @@ function handlePaste(e) {
 /** Submits the current PIN to the backend. */
 async function submitPin() {
   const pin = getPinValue();
-  if (pin.length < PIN_LENGTH) return;
+  if (pin.length < PIN_LENGTH || isSubmitting) return;
 
+  isSubmitting = true;
   setLoading(true);
 
   try {
     await verifyPin(pin);
-    // Success — transition to app
-    setLoading(false);
+    // Keep loading state visible — auth screen is about to fade out.
     onSuccessCallback?.();
   } catch (err) {
+    isSubmitting = false;
     setLoading(false);
     showError(err.message || 'Invalid PIN');
   }

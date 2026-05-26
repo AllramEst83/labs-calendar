@@ -60,6 +60,9 @@ function showApp() {
 
 /** Show the auth screen (first visit or session expired). */
 function showAuthScreen() {
+  const authScreen = document.getElementById('auth-screen');
+  authScreen?.classList.remove('hidden');
+  authScreen?.classList.add('visible');
   initAuth(onAuthSuccess);
 }
 
