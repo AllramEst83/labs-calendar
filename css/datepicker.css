@@ -19,6 +19,11 @@
   background-position: right 12px center;
 }
 
+#add-pane .flatpickr-wrapper {
+  display: block;
+  width: 100%;
+}
+
 #add-pane .flatpickr-input:focus {
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 3px var(--accent-primary-light);
@@ -32,6 +37,31 @@
   box-shadow: var(--shadow-lg);
   z-index: 400;
   padding: 8px;
+  width: 100% !important;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin-top: 8px;
+  overflow: visible;
+  height: auto !important;
+}
+
+#add-pane .labs-flatpickr.flatpickr-calendar {
+  box-shadow: none;
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface-2);
+}
+
+#add-pane .labs-flatpickr .flatpickr-innerContainer,
+#add-pane .labs-flatpickr .flatpickr-rContainer,
+#add-pane .labs-flatpickr .flatpickr-days,
+#add-pane .labs-flatpickr .dayContainer {
+  width: 100%;
+  max-width: 100%;
+}
+
+#add-pane .labs-flatpickr .dayContainer {
+  min-width: 0;
+  justify-content: space-around;
 }
 
 .labs-flatpickr .flatpickr-months {
@@ -48,6 +78,22 @@
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-primary);
+  width: 100%;
+  left: 0;
+  padding: 0 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+#add-pane .labs-flatpickr .flatpickr-current-month {
+  font-size: 0.88rem;
+  padding: 0 32px;
+}
+
+.labs-flatpickr .flatpickr-current-month .flatpickr-monthDropdown-months {
+  max-width: 120px;
 }
 
 .labs-flatpickr .flatpickr-current-month .flatpickr-monthDropdown-months,
@@ -73,9 +119,16 @@
   color: var(--text-primary);
   border-radius: var(--radius-xs);
   font-weight: 500;
-  max-width: 36px;
-  height: 36px;
-  line-height: 36px;
+  flex: 1 0 14.28%;
+  max-width: none;
+  height: 34px;
+  line-height: 34px;
+}
+
+#add-pane .labs-flatpickr .flatpickr-day {
+  height: 32px;
+  line-height: 32px;
+  font-size: 0.82rem;
 }
 
 .labs-flatpickr .flatpickr-day:hover,
@@ -119,8 +172,11 @@
 /* Time picker */
 .labs-flatpickr .flatpickr-time {
   border-top: 1px solid var(--border-color);
-  max-height: none;
-  padding: 12px 8px 8px;
+  height: auto !important;
+  max-height: none !important;
+  padding: 10px 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .labs-flatpickr .flatpickr-time .numInputWrapper {
@@ -128,12 +184,17 @@
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
   height: 40px;
+  flex: 1 0 60px;
 }
 
 .labs-flatpickr .flatpickr-time input {
   color: var(--text-primary);
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 1rem;
+}
+
+#add-pane .labs-flatpickr .flatpickr-time input {
+  font-size: 0.95rem;
 }
 
 .labs-flatpickr .flatpickr-time input:hover,

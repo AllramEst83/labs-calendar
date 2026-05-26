@@ -28,7 +28,7 @@ function baseOptions(id) {
     altFormat: 'D, M j, Y · H:i',
     minuteIncrement: 5,
     allowInput: false,
-    appendTo: document.body,
+    static: true,
     disableMobile: true,
     defaultHour: id === 'event-start' ? 9 : 10,
     defaultMinute: 0,
@@ -38,6 +38,9 @@ function baseOptions(id) {
     },
     onOpen(_selectedDates, _dateStr, fp) {
       syncPickerTheme(fp);
+      pickers.forEach((other) => {
+        if (other !== fp && other.isOpen) other.close();
+      });
     },
   };
 }
@@ -72,6 +75,11 @@ export function setDatetimeValue(id, value) {
 /** Clear both event date/time pickers. */
 export function clearDatetimePickers() {
   pickers.forEach((fp) => fp.clear());
+}
+
+/** Close open picker dropdowns (e.g. when the add pane closes). */
+export function closeDatetimePickers() {
+  pickers.forEach((fp) => fp.close());
 }
 
 /** Returns an ISO string for the selected date/time, or empty string. */

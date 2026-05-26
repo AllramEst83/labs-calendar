@@ -41,7 +41,7 @@ function showApp() {
   appScreen?.classList.add('visible');
 
   // Initialize panes first — no dependency on calendar module
-  initPanes(() => refreshCalendar());
+  initPanes();
   initCalendar({
     onDateClick: (dateStr) => openAddPane(dateStr),
     onEventClick: (event) => openViewPane(event),

@@ -7,18 +7,17 @@
  */
 
 import { createEvent, updateEvent, deleteEvent } from './api.js';
-import { getCalendarEventById } from './calendar.js';
+import { getCalendarEventById, addCalendarEvent, updateCalendarEvent, removeCalendarEvent, goToDate } from './calendar.js';
 import { showToast } from './toast.js';
 import { stripHtml, getCategoryColor, formatDateRange, formatDate, formatTime } from './utils.js';
 import {
   initDatetimePickers,
   setDatetimeValue,
   clearDatetimePickers,
+  closeDatetimePickers,
   getDatetimeValue,
 } from './datetime-picker.js';
 
-/** Injected by app.js — calls calendar.refetchEvents() after mutations. */
-let refreshFn = () => {};
 
 // ============================================================
 // STATE
@@ -106,6 +105,7 @@ export function openEditPane(event) {
 }
 
 export function closeAddPane() {
+  closeDatetimePickers();
   document.getElementById('add-pane')?.classList.remove('open');
   document.getElementById('add-pane')?.setAttribute('aria-hidden', 'true');
 }
@@ -389,15 +389,17 @@ async function handleFormSubmit() {
 
   try {
     if (currentEditEvent) {
-      await updateEvent(currentEditEvent.id, data);
+      const updated = await updateEvent(currentEditEvent.id, data);
+      updateCalendarEvent(updated);
       showToast('Event updated successfully.', 'success');
     } else {
-      await createEvent(data);
+      const created = await createEvent(data);
+      addCalendarEvent(created);
+      if (created?.start) goToDate(created.start.slice(0, 10));
       showToast('Event created successfully.', 'success');
     }
     closeAddPane();
     closeOverlay();
-    refreshFn();
   } catch (err) {
     showToast(err.message || 'Failed to save event.', 'error');
   } finally {
@@ -447,10 +449,10 @@ async function handleDeleteEvent() {
     onConfirm: async () => {
       try {
         await deleteEvent(currentViewEvent.id);
+        removeCalendarEvent(currentViewEvent.id);
         showToast('Event deleted.', 'success');
         closeViewPane();
         closeOverlay();
-        refreshFn();
         currentViewEvent = null;
       } catch (err) {
         showToast(err.message || 'Failed to delete event.', 'error');
@@ -503,11 +505,8 @@ function renderLangTags() {
 // INITIALIZATION
 // ============================================================
 
-/** Initialize all pane event listeners.
- * @param {() => void} onRefresh - Called after create/update/delete to refresh the calendar.
- */
-export function initPanes(onRefresh = () => {}) {
-  refreshFn = onRefresh;
+/** Initialize all pane event listeners. */
+export function initPanes() {
   initDatetimePickers();
 
   // Close buttons

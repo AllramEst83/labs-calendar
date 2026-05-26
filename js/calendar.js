@@ -109,7 +109,7 @@ async function loadEventsForRange(info, successCallback, failureCallback) {
  * @param {any[]} events
  * @returns {any[]}
  */
-function transformEvents(events) {
+export function transformEvents(events) {
   if (!Array.isArray(events)) return [];
   return events.map((ev) => ({
     id:    ev.id,
@@ -262,6 +262,36 @@ function buildEventPayload(fcEvent) {
     allDay: fcEvent.allDay ?? raw.allDay,
     languages,
   };
+}
+
+/**
+ * Add a server event to the calendar immediately (after successful create).
+ * @param {object} serverEvent
+ */
+export function addCalendarEvent(serverEvent) {
+  if (!calendarInstance || !serverEvent) return;
+  const [fcEvent] = transformEvents([serverEvent]);
+  if (!fcEvent) return;
+  calendarInstance.getEventById(fcEvent.id)?.remove();
+  calendarInstance.addEvent(fcEvent);
+}
+
+/**
+ * Replace an existing calendar event with updated server data.
+ * @param {object} serverEvent
+ */
+export function updateCalendarEvent(serverEvent) {
+  if (!calendarInstance || !serverEvent?.id) return;
+  calendarInstance.getEventById(serverEvent.id)?.remove();
+  addCalendarEvent(serverEvent);
+}
+
+/**
+ * Remove an event from the calendar by id.
+ * @param {string} id
+ */
+export function removeCalendarEvent(id) {
+  calendarInstance?.getEventById(id)?.remove();
 }
 
 /**
