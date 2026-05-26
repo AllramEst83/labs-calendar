@@ -19,7 +19,7 @@ import { getStore } from '@netlify/blobs';
 import type { Context } from '@netlify/functions';
 import { getCorsHeaders, handlePreflight } from './_shared/cors.mts';
 import { validateSession } from './_shared/auth.mts';
-import { CreateEventSchema, UpdateEventSchema, CalendarEvent } from './_shared/schema.mts';
+import { CreateEventSchema, UpdateEventSchema, CalendarEvent, TimeSlot } from './_shared/schema.mts';
 
 const MAX_EVENTS_PER_MONTH = 100;
 
@@ -41,6 +41,72 @@ function monthKey(dateStr: string): string {
   const year  = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
   return `events-${year}-${month}`;
+}
+
+/**
+ * Returns all time slots for an event (supports legacy single start/end).
+ */
+function getEventTimeslots(event: Pick<CalendarEvent, 'start' | 'end' | 'timeslots'>): TimeSlot[] {
+  if (Array.isArray(event.timeslots) && event.timeslots.length > 0) {
+    return event.timeslots;
+  }
+  return [{ start: event.start, end: event.end }];
+}
+
+/**
+ * Sorts slots and syncs legacy start/end fields. Stores timeslots only when > 1.
+ */
+function normalizeStoredEvent<T extends Partial<CalendarEvent>>(event: T): T & Pick<CalendarEvent, 'start' | 'end' | 'timeslots'> {
+  const slots = [...getEventTimeslots(event as CalendarEvent)].sort(
+    (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
+  );
+  const first = slots[0];
+  const last  = slots[slots.length - 1];
+
+  return {
+    ...event,
+    start: first.start,
+    end:   last.end,
+    timeslots: slots.length > 1 ? slots : undefined,
+  };
+}
+
+/**
+ * Blob key for storage — uses the earliest slot's month.
+ */
+function storageMonthKey(event: Pick<CalendarEvent, 'start' | 'end' | 'timeslots'>): string {
+  const slots = getEventTimeslots(event);
+  const earliest = slots.reduce(
+    (min, slot) => (new Date(slot.start) < new Date(min) ? slot.start : min),
+    slots[0].start
+  );
+  return monthKey(earliest);
+}
+
+/**
+ * Month keys to scan for GET — includes prior month so cross-month slots are found.
+ */
+function monthKeysForQuery(start: string, end: string): string[] {
+  const keys = monthKeysBetween(start, end);
+  const prior = new Date(start);
+  prior.setMonth(prior.getMonth() - 1);
+  const priorKey = monthKey(prior.toISOString().slice(0, 10));
+  if (!keys.includes(priorKey)) keys.unshift(priorKey);
+  return keys;
+}
+
+/**
+ * True when any slot start falls within the requested date range.
+ */
+function eventMatchesRange(
+  event: CalendarEvent,
+  rangeStart: number,
+  rangeEnd: number
+): boolean {
+  return getEventTimeslots(event).some((slot) => {
+    const evStart = new Date(slot.start).getTime();
+    return evStart >= rangeStart && evStart <= rangeEnd;
+  });
 }
 
 /**
@@ -117,7 +183,7 @@ export default async (request: Request, context: Context) => {
       return json({ error: 'start and end query params required' }, 400, corsHeaders);
     }
 
-    const keys = monthKeysBetween(startParam, endParam);
+    const keys = monthKeysForQuery(startParam, endParam);
     const allEvents: CalendarEvent[] = [];
 
     await Promise.all(
@@ -127,13 +193,15 @@ export default async (request: Request, context: Context) => {
       })
     );
 
-    // Filter to strictly within the requested range
     const start = new Date(startParam).getTime();
     const end   = new Date(endParam).getTime();
+    const seen  = new Set<string>();
 
     const filtered = allEvents.filter((ev) => {
-      const evStart = new Date(ev.start).getTime();
-      return evStart >= start && evStart <= end;
+      if (seen.has(ev.id)) return false;
+      if (!eventMatchesRange(ev, start, end)) return false;
+      seen.add(ev.id);
+      return true;
     });
 
     return json(filtered, 200, corsHeaders);
@@ -153,8 +221,8 @@ export default async (request: Request, context: Context) => {
       return json({ error: 'Validation failed', details: parsed.error.flatten() }, 400, corsHeaders);
     }
 
-    const data = parsed.data;
-    const key  = monthKey(data.start);
+    const data = normalizeStoredEvent(parsed.data);
+    const key  = storageMonthKey(data);
     const existingEvents = await readMonthEvents(store, key);
 
     if (existingEvents.length >= MAX_EVENTS_PER_MONTH) {
@@ -162,12 +230,12 @@ export default async (request: Request, context: Context) => {
     }
 
     const now = new Date().toISOString();
-    const newEvent: CalendarEvent = {
+    const newEvent: CalendarEvent = normalizeStoredEvent({
       ...data,
       id:        crypto.randomUUID(),
       createdAt: now,
       updatedAt: now,
-    } as CalendarEvent;
+    });
 
     await writeMonthEvents(store, key, [...existingEvents, newEvent]);
 
@@ -198,15 +266,15 @@ export default async (request: Request, context: Context) => {
     }
 
     const now = new Date().toISOString();
-    const updatedEvent: CalendarEvent = {
+    const updatedEvent: CalendarEvent = normalizeStoredEvent({
       ...foundEvent,
       ...updates,
       id:        foundEvent.id,
       createdAt: foundEvent.createdAt,
       updatedAt: now,
-    } as CalendarEvent;
+    });
 
-    const newKey = monthKey(updatedEvent.start);
+    const newKey = storageMonthKey(updatedEvent);
 
     if (newKey === foundKey) {
       // Same month — update in place

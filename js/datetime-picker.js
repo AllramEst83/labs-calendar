@@ -10,6 +10,7 @@ import { onThemeChange } from './theme.js';
 
 /** @type {Map<string, import('flatpickr').Instance>} */
 const pickers = new Map();
+let themeListenerReady = false;
 
 function getTheme() {
   return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
@@ -30,7 +31,7 @@ function baseOptions(id) {
     allowInput: false,
     static: true,
     disableMobile: true,
-    defaultHour: id === 'event-start' ? 9 : 10,
+    defaultHour: id.endsWith('-start') ? 9 : 10,
     defaultMinute: 0,
     onReady(_selectedDates, _dateStr, fp) {
       fp.calendarContainer.classList.add('labs-flatpickr');
@@ -45,15 +46,37 @@ function baseOptions(id) {
   };
 }
 
-/** Initialize date/time pickers on the event form fields. */
-export function initDatetimePickers() {
+function ensureThemeListener() {
+  if (themeListenerReady) return;
   onThemeChange(() => syncDatetimePickerTheme());
+  themeListenerReady = true;
+}
 
-  ['event-start', 'event-end'].forEach((id) => {
-    const el = document.getElementById(id);
-    if (!el || pickers.has(id)) return;
-    pickers.set(id, flatpickr(el, baseOptions(id)));
-  });
+/** Initialize date/time picker support (theme sync only). */
+export function initDatetimePickers() {
+  ensureThemeListener();
+}
+
+/** Mount a flatpickr instance on a field by element id. */
+export function mountDatetimePicker(id) {
+  ensureThemeListener();
+  const el = document.getElementById(id);
+  if (!el || pickers.has(id)) return;
+  pickers.set(id, flatpickr(el, baseOptions(id)));
+}
+
+/** Destroy a picker and remove it from the registry. */
+export function destroyDatetimePicker(id) {
+  const fp = pickers.get(id);
+  if (!fp) return;
+  fp.destroy();
+  pickers.delete(id);
+}
+
+/** Destroy all mounted pickers. */
+export function destroyAllDatetimePickers() {
+  pickers.forEach((fp) => fp.destroy());
+  pickers.clear();
 }
 
 /** Sync picker theme when the app theme toggles. */
@@ -72,7 +95,7 @@ export function setDatetimeValue(id, value) {
   fp.setDate(value instanceof Date ? value : new Date(value), true);
 }
 
-/** Clear both event date/time pickers. */
+/** Clear all mounted pickers. */
 export function clearDatetimePickers() {
   pickers.forEach((fp) => fp.clear());
 }

@@ -380,6 +380,65 @@
   margin-top: 4px;
 }
 
+/* Time slots — form */
+.timeslots-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.timeslot-row {
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-2);
+}
+
+.timeslot-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.timeslot-row-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.timeslot-remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  font-size: 18px;
+  line-height: 1;
+  transition: all var(--transition-fast);
+}
+
+.timeslot-remove-btn:hover {
+  background: rgba(225, 112, 85, 0.15);
+  color: #e17055;
+}
+
+/* Time slots — view pane */
+.timeslots-view {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timeslot-view-item {
+  line-height: 1.4;
+}
+
 /* ============================================
    CONFIRM DIALOG
    ============================================ */

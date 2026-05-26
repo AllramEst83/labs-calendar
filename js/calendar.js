@@ -14,7 +14,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 
 import { fetchEvents } from './api.js';
 import { showToast } from './toast.js';
-import { getCategoryColor, formatTime } from './utils.js';
+import { getCategoryColor, formatTime, getEventTimeslots } from './utils.js';
 
 /** @type {Calendar|null} */
 let calendarInstance = null;
@@ -111,23 +111,36 @@ async function loadEventsForRange(info, successCallback, failureCallback) {
  */
 export function transformEvents(events) {
   if (!Array.isArray(events)) return [];
-  return events.map((ev) => ({
-    id:    ev.id,
-    title: ev.title,
-    start: ev.start,
-    end:   ev.end || undefined,
-    allDay: ev.allDay || false,
-    backgroundColor: ev.color || getCategoryColor(ev.category),
-    borderColor:     ev.color || getCategoryColor(ev.category),
-    textColor: '#ffffff',
-    extendedProps: {
-      color:       ev.color || getCategoryColor(ev.category),
-      category:    ev.category,
-      serviceType: ev.serviceType || '',
-      languages:   Array.isArray(ev.languages) ? ev.languages : [],
-      _raw:        ev,
-    },
-  }));
+
+  const result = [];
+  for (const ev of events) {
+    const slots = getEventTimeslots(ev);
+    if (slots.length === 0) continue;
+
+    const multi = slots.length > 1;
+    slots.forEach((slot, index) => {
+      result.push({
+        id:       multi ? `${ev.id}__${index}` : ev.id,
+        groupId:  multi ? ev.id : undefined,
+        title:    ev.title,
+        start:    slot.start,
+        end:      slot.end || undefined,
+        allDay:   ev.allDay || false,
+        backgroundColor: ev.color || getCategoryColor(ev.category),
+        borderColor:     ev.color || getCategoryColor(ev.category),
+        textColor: '#ffffff',
+        extendedProps: {
+          color:       ev.color || getCategoryColor(ev.category),
+          category:    ev.category,
+          serviceType: ev.serviceType || '',
+          languages:   Array.isArray(ev.languages) ? ev.languages : [],
+          slotIndex:   index,
+          _raw:        ev,
+        },
+      });
+    });
+  }
+  return result;
 }
 
 /**
@@ -245,7 +258,11 @@ function escapeHtml(str) {
  * @returns {object|null}
  */
 export function getCalendarEventById(id) {
-  const fcEvent = calendarInstance?.getEventById(id);
+  const baseId = id.includes('__') ? id.split('__')[0] : id;
+  const events = calendarInstance?.getEvents() || [];
+  const fcEvent = events.find(
+    (ev) => ev.id === id || ev.groupId === baseId || ev.id === baseId
+  );
   return fcEvent ? buildEventPayload(fcEvent) : null;
 }
 
@@ -253,13 +270,16 @@ export function getCalendarEventById(id) {
 function buildEventPayload(fcEvent) {
   const raw = fcEvent.extendedProps?._raw || {};
   const languages = fcEvent.extendedProps?.languages ?? raw.languages;
+  const eventId = raw.id || fcEvent.groupId || fcEvent.id.split('__')[0];
+
   return {
     ...raw,
-    id: fcEvent.id,
+    id: eventId,
     title: fcEvent.title,
-    start: fcEvent.start?.toISOString?.() ?? raw.start,
-    end: fcEvent.end?.toISOString?.() ?? raw.end,
+    start: raw.start ?? fcEvent.start?.toISOString?.(),
+    end: raw.end ?? fcEvent.end?.toISOString?.(),
     allDay: fcEvent.allDay ?? raw.allDay,
+    timeslots: raw.timeslots,
     languages,
   };
 }
@@ -270,10 +290,10 @@ function buildEventPayload(fcEvent) {
  */
 export function addCalendarEvent(serverEvent) {
   if (!calendarInstance || !serverEvent) return;
-  const [fcEvent] = transformEvents([serverEvent]);
-  if (!fcEvent) return;
-  calendarInstance.getEventById(fcEvent.id)?.remove();
-  calendarInstance.addEvent(fcEvent);
+  removeCalendarEvent(serverEvent.id);
+  transformEvents([serverEvent]).forEach((fcEvent) => {
+    calendarInstance.addEvent(fcEvent);
+  });
 }
 
 /**
@@ -282,7 +302,7 @@ export function addCalendarEvent(serverEvent) {
  */
 export function updateCalendarEvent(serverEvent) {
   if (!calendarInstance || !serverEvent?.id) return;
-  calendarInstance.getEventById(serverEvent.id)?.remove();
+  removeCalendarEvent(serverEvent.id);
   addCalendarEvent(serverEvent);
 }
 
@@ -291,7 +311,12 @@ export function updateCalendarEvent(serverEvent) {
  * @param {string} id
  */
 export function removeCalendarEvent(id) {
-  calendarInstance?.getEventById(id)?.remove();
+  if (!calendarInstance) return;
+  calendarInstance.getEvents().forEach((ev) => {
+    if (ev.id === id || ev.groupId === id || ev.id.startsWith(`${id}__`)) {
+      ev.remove();
+    }
+  });
 }
 
 /**

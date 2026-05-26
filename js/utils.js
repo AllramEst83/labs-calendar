@@ -75,6 +75,41 @@ export function formatDateRange(start, end, allDay = false) {
 }
 
 /**
+ * Returns all time slots for an event (supports legacy single start/end).
+ * @param {{ start?: string, end?: string, timeslots?: { start: string, end?: string }[] }} event
+ * @returns {{ start: string, end?: string }[]}
+ */
+export function getEventTimeslots(event) {
+  if (!event) return [];
+  if (Array.isArray(event.timeslots) && event.timeslots.length > 0) {
+    return event.timeslots;
+  }
+  if (event.start) {
+    return [{ start: event.start, end: event.end }];
+  }
+  return [];
+}
+
+/**
+ * Formats all event time slots for display.
+ * @param {{ start?: string, end?: string, timeslots?: { start: string, end?: string }[], allDay?: boolean }} event
+ * @returns {string}
+ */
+export function formatEventTimeslots(event) {
+  const slots = getEventTimeslots(event);
+  const allDay = !!event?.allDay;
+
+  if (slots.length === 0) return '';
+  if (slots.length === 1) {
+    return formatDateRange(slots[0].start, slots[0].end, allDay);
+  }
+
+  return slots
+    .map((slot) => formatDateRange(slot.start, slot.end, allDay))
+    .join(' · ');
+}
+
+/**
  * Generate a Netlify Blob key for a given date.
  * @param {string|Date} date
  * @returns {string} e.g. "events-2026-05"

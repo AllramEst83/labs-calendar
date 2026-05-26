@@ -120,14 +120,8 @@
         <!-- Date & Time -->
         <div class="form-section">
           <div class="form-section-title">Date &amp; Time</div>
-          <div class="form-group">
-            <label for="event-start">Start *</label>
-            <input type="text" id="event-start" placeholder="Pick date and time" required />
-          </div>
-          <div class="form-group">
-            <label for="event-end">End</label>
-            <input type="text" id="event-end" placeholder="Pick date and time" />
-          </div>
+          <div id="timeslots-container" class="timeslots-container"></div>
+          <button type="button" class="btn btn-ghost btn-sm" id="add-timeslot-btn" style="width:100%;margin-bottom:12px">+ Add another time</button>
           <div class="form-group">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
               <input type="checkbox" id="event-allday" style="width:auto" />

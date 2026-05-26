@@ -9,9 +9,11 @@
 import { createEvent, updateEvent, deleteEvent } from './api.js';
 import { getCalendarEventById, addCalendarEvent, updateCalendarEvent, removeCalendarEvent, goToDate } from './calendar.js';
 import { showToast } from './toast.js';
-import { stripHtml, getCategoryColor, formatDateRange, formatDate, formatTime } from './utils.js';
+import { stripHtml, getCategoryColor, formatDateRange, formatDate, formatTime, getEventTimeslots, formatEventTimeslots } from './utils.js';
 import {
   initDatetimePickers,
+  mountDatetimePicker,
+  destroyDatetimePicker,
   setDatetimeValue,
   clearDatetimePickers,
   closeDatetimePickers,
@@ -31,6 +33,9 @@ let currentEditEvent = null;
 
 /** Collected languages for the form. */
 let formLanguages = [];
+
+/** Counter for unique timeslot field ids. */
+let timeslotCounter = 0;
 
 // ============================================================
 // OVERLAY & PANE HELPERS
@@ -65,14 +70,15 @@ export function closeAllPanes() {
 export function openAddPane(dateStr = null) {
   currentEditEvent = null;
   resetForm();
+  clearTimeslots();
 
-  // Pre-fill date if provided
   if (dateStr) {
     const dt = dateStr.includes('T') ? dateStr : `${dateStr}T09:00`;
-    setDatetimeValue('event-start', new Date(dt));
     const end = new Date(dt);
     end.setHours(end.getHours() + 1);
-    setDatetimeValue('event-end', end);
+    addTimeslotRow({ start: dt, end: end.toISOString() });
+  } else {
+    addTimeslotRow();
   }
 
   document.getElementById('add-pane-title').textContent = 'New Event';
@@ -139,13 +145,19 @@ function renderViewPane(event) {
   if (!content) return;
 
   const langs = parseEventLanguages(event);
+  const slots = getEventTimeslots(event);
+  const timesHtml = slots.length > 1
+    ? `<div class="timeslots-view">${slots.map((slot) =>
+        `<div class="timeslot-view-item">${escapeHtml(formatDateRange(slot.start, slot.end, event.allDay))}</div>`
+      ).join('')}</div>`
+    : escapeHtml(formatEventTimeslots(event));
 
   content.innerHTML = `
     <div class="event-detail-header">
       <h3 class="event-detail-title">${escapeHtml(event.title)}</h3>
       <div class="event-detail-time">
         <span class="event-detail-icon">🕐</span>
-        <span>${formatDateRange(event.start, event.end, event.allDay)}</span>
+        <span>${timesHtml}</span>
       </div>
     </div>
 
@@ -157,8 +169,6 @@ function renderViewPane(event) {
       ${detailRow('🔑', 'Stream Key', displayMono(event.streamKey))}
       ${detailRow('🌐', 'Languages', langs.length > 0 ? langTagsHtml(langs) : emptyValue())}
       ${detailRow('📅', 'All-day', event.allDay ? 'Yes' : 'No')}
-      ${detailRow('▶️', 'Start', displayDateTime(event.start, event.allDay))}
-      ${detailRow('⏹️', 'End', displayDateTime(event.end, event.allDay))}
       ${detailRow('🕐', 'Created', formatDateTime(event.createdAt))}
       ${detailRow('✏️', 'Updated', formatDateTime(event.updatedAt))}
     </div>
@@ -295,7 +305,8 @@ function resetForm() {
 /** Clears form fields without wiping an in-progress language list. */
 function resetFormFields() {
   document.getElementById('event-form')?.reset();
-  clearDatetimePickers();
+  clearTimeslots();
+  addTimeslotRow();
   document.getElementById('event-id').value = '';
   document.getElementById('lang-code').value = '';
   document.getElementById('lang-name').value = '';
@@ -317,8 +328,13 @@ function populateForm(event) {
   setValue('event-stream-url', event.streamUrl || '');
   setValue('event-stream-key', event.streamKey || '');
 
-  if (event.start) setDatetimeValue('event-start', event.start);
-  if (event.end) setDatetimeValue('event-end', event.end);
+  clearTimeslots();
+  const slots = getEventTimeslots(event);
+  if (slots.length === 0) {
+    addTimeslotRow();
+  } else {
+    slots.forEach((slot) => addTimeslotRow(slot));
+  }
 
   const alldayChk = document.getElementById('event-allday');
   if (alldayChk) alldayChk.checked = !!event.allDay;
@@ -341,8 +357,9 @@ function collectFormData() {
   const getValue = (id) => stripHtml(document.getElementById(id)?.value?.trim() || '');
 
   const allDay = document.getElementById('event-allday')?.checked || false;
-  const start = getDatetimeValue('event-start') || undefined;
-  const end = getDatetimeValue('event-end') || undefined;
+  const timeslots = collectTimeslots();
+  const first = timeslots[0];
+  const last = timeslots[timeslots.length - 1];
 
   return {
     title:       getValue('event-title'),
@@ -353,8 +370,9 @@ function collectFormData() {
     streamKey:   getValue('event-stream-key'),
     category:    'other',
     color:       getCategoryColor('other'),
-    start,
-    end:         end || undefined,
+    start:       first?.start,
+    end:         last?.end || undefined,
+    timeslots:   timeslots.length > 1 ? timeslots : undefined,
     allDay,
     languages:   getLanguagesForSubmit(),
   };
@@ -363,8 +381,16 @@ function collectFormData() {
 /** Basic client-side validation. Returns error message or null. */
 function validateForm(data) {
   if (!data.title) return 'Event title is required.';
-  if (!data.start) return 'Start date and time is required.';
-  if (data.end && data.start > data.end) return 'End time must be after start time.';
+
+  const slots = collectTimeslots();
+  if (slots.length === 0) return 'At least one start time is required.';
+
+  for (const slot of slots) {
+    if (slot.end && slot.start > slot.end) {
+      return 'End time must be after start time for each slot.';
+    }
+  }
+
   return null;
 }
 
@@ -462,6 +488,100 @@ async function handleDeleteEvent() {
 }
 
 // ============================================================
+// TIME SLOTS
+// ============================================================
+
+function clearTimeslots() {
+  const container = document.getElementById('timeslots-container');
+  if (!container) return;
+
+  container.querySelectorAll('.timeslot-row').forEach((row) => {
+    destroyTimeslotPickers(row.dataset.index);
+  });
+  container.innerHTML = '';
+  timeslotCounter = 0;
+}
+
+function destroyTimeslotPickers(index) {
+  destroyDatetimePicker(`timeslot-${index}-start`);
+  destroyDatetimePicker(`timeslot-${index}-end`);
+}
+
+function addTimeslotRow({ start, end } = {}) {
+  const container = document.getElementById('timeslots-container');
+  if (!container) return;
+
+  const index = timeslotCounter++;
+  const slotNumber = container.querySelectorAll('.timeslot-row').length + 1;
+  const row = document.createElement('div');
+  row.className = 'timeslot-row';
+  row.dataset.index = String(index);
+  row.innerHTML = `
+    <div class="timeslot-row-header">
+      <span class="timeslot-row-label">Time ${slotNumber}</span>
+      <button type="button" class="timeslot-remove-btn" aria-label="Remove time slot">×</button>
+    </div>
+    <div class="form-group">
+      <label for="timeslot-${index}-start">Start *</label>
+      <input type="text" id="timeslot-${index}-start" placeholder="Pick date and time" required />
+    </div>
+    <div class="form-group" style="margin-bottom:0">
+      <label for="timeslot-${index}-end">End</label>
+      <input type="text" id="timeslot-${index}-end" placeholder="Pick date and time" />
+    </div>
+  `;
+
+  container.appendChild(row);
+  mountDatetimePicker(`timeslot-${index}-start`);
+  mountDatetimePicker(`timeslot-${index}-end`);
+
+  if (start) setDatetimeValue(`timeslot-${index}-start`, start);
+  if (end) setDatetimeValue(`timeslot-${index}-end`, end);
+
+  row.querySelector('.timeslot-remove-btn')?.addEventListener('click', () => {
+    removeTimeslotRow(row);
+  });
+
+  updateTimeslotLabels();
+}
+
+function removeTimeslotRow(row) {
+  const container = document.getElementById('timeslots-container');
+  if (!container || container.querySelectorAll('.timeslot-row').length <= 1) {
+    showToast('An event needs at least one time slot.', 'warning');
+    return;
+  }
+
+  destroyTimeslotPickers(row.dataset.index);
+  row.remove();
+  updateTimeslotLabels();
+}
+
+function updateTimeslotLabels() {
+  document.querySelectorAll('.timeslot-row').forEach((row, i) => {
+    const label = row.querySelector('.timeslot-row-label');
+    if (label) label.textContent = `Time ${i + 1}`;
+  });
+}
+
+function collectTimeslots() {
+  return Array.from(document.querySelectorAll('.timeslot-row'))
+    .map((row) => {
+      const index = row.dataset.index;
+      const start = getDatetimeValue(`timeslot-${index}-start`);
+      const end = getDatetimeValue(`timeslot-${index}-end`) || undefined;
+      return start ? { start, end } : null;
+    })
+    .filter(Boolean);
+}
+
+function initTimeslotControls() {
+  document.getElementById('add-timeslot-btn')?.addEventListener('click', () => {
+    addTimeslotRow();
+  });
+}
+
+// ============================================================
 // LANGUAGES
 // ============================================================
 
@@ -540,6 +660,9 @@ export function initPanes() {
 
   // Languages
   initLanguageControls();
+
+  // Time slots
+  initTimeslotControls();
 }
 
 // ============================================================

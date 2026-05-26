@@ -27,6 +27,12 @@ const LanguageSchema = z.object({
   message: 'Each language must have a code or name',
 });
 
+/** A single start/end window within an event. */
+const TimeSlotSchema = z.object({
+  start: z.string().datetime({ message: 'timeslot start must be a valid ISO datetime' }),
+  end:   z.string().datetime().optional(),
+});
+
 /** Valid event category values */
 const CategoryEnum = z.enum([
   'meeting',
@@ -45,6 +51,7 @@ export const CalendarEventSchema = z.object({
   title:       safeStr(200),
   start:       z.string().datetime({ message: 'start must be a valid ISO datetime' }),
   end:         z.string().datetime().optional(),
+  timeslots:   z.array(TimeSlotSchema).min(1).max(10).optional(),
   allDay:      z.boolean().default(false),
   description: optionalSafeStr(2000),
   location:    optionalSafeStr(300),
@@ -74,6 +81,7 @@ export const UpdateEventSchema = CalendarEventSchema.omit({
   updatedAt: true,
 }).partial().strict();
 
+export type TimeSlot = z.infer<typeof TimeSlotSchema>;
 export type CalendarEvent = z.infer<typeof CalendarEventSchema>;
 export type CreateEventInput = z.infer<typeof CreateEventSchema>;
 export type UpdateEventInput = z.infer<typeof UpdateEventSchema>;
