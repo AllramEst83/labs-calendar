@@ -60,7 +60,16 @@ input, textarea, select {
   align-items: center;
   justify-content: center;
   background: var(--auth-gradient);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
   transition: opacity var(--transition-slow), visibility var(--transition-slow);
+}
+
+#auth-screen.visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 #auth-screen.hidden {
