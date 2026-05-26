@@ -74,7 +74,13 @@ export async function checkAuth() {
     const response = await fetch(`${BASE}/check-session`, {
       credentials: 'include',
     });
-    return response.ok;
+    if (!response.ok) return false;
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) return false;
+
+    const data = await response.json();
+    return data?.ok === true;
   } catch {
     return false;
   }
