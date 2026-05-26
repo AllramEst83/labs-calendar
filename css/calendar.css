@@ -185,15 +185,21 @@
   border-bottom: none !important;
 }
 
-/* List view */
+/* List / Agenda view */
 .fc .fc-list-day-cushion {
   background: var(--bg-surface-2) !important;
-  color: var(--text-secondary) !important;
+  color: var(--text-primary) !important;
   font-size: 0.82rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 10px 16px;
+}
+
+.fc .fc-list-event {
+  background: var(--bg-surface) !important;
+  border-left: 3px solid var(--event-accent-color, var(--accent-primary));
+  color: var(--text-primary) !important;
 }
 
 .fc .fc-list-event:hover td {
@@ -202,12 +208,18 @@
 
 .fc .fc-list-event-time {
   font-size: 0.82rem;
-  color: var(--text-muted);
+  font-weight: 600;
+  color: var(--text-primary) !important;
+  white-space: nowrap;
 }
 
 .fc .fc-list-event-title {
   font-size: 0.9rem;
-  color: var(--text-primary);
+  color: var(--text-primary) !important;
+}
+
+.fc .fc-list-event-dot {
+  border-color: var(--event-accent-color, var(--accent-primary)) !important;
 }
 
 /* No events state */
@@ -349,7 +361,8 @@
 
 .cal-event-inner--list .cal-event-service {
   font-size: 0.8rem;
-  color: var(--text-secondary);
+  color: var(--text-primary);
+  opacity: 0.85;
   line-height: 1.35;
 }
 

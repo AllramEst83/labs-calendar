@@ -75,10 +75,16 @@ export function initCalendar({ onDateClick, onEventClick }) {
     // Style tweaks applied after render
     eventDidMount: (info) => {
       const color = info.event.extendedProps.color;
-      if (color) {
-        info.el.style.backgroundColor = color;
-        info.el.style.borderColor = color;
+      if (!color) return;
+
+      // List/agenda view: neutral row + accent bar (colored fill hurts text contrast)
+      if (info.view.type.startsWith('list')) {
+        info.el.style.setProperty('--event-accent-color', color);
+        return;
       }
+
+      info.el.style.backgroundColor = color;
+      info.el.style.borderColor = color;
     },
   });
 
@@ -321,9 +327,12 @@ export function removeCalendarEvent(id) {
 
 /**
  * Refetch all events for the current view — called after create/update/delete.
+ * Clears existing events first so manually added entries are not duplicated.
  */
 export function refreshCalendar() {
-  calendarInstance?.refetchEvents();
+  if (!calendarInstance) return;
+  calendarInstance.removeAllEvents();
+  calendarInstance.refetchEvents();
 }
 
 /**
