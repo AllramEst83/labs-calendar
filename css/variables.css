@@ -1,0 +1,99 @@
+/* ============================================
+   CSS VARIABLES & THEMING
+   ============================================ */
+
+:root {
+  /* Backgrounds */
+  --bg-primary: #f7f7f9;
+  --bg-secondary: #eeeef2;
+  --bg-surface: #ffffff;
+  --bg-surface-2: #f4f4f8;
+  --bg-overlay: rgba(0, 0, 0, 0.45);
+  --bg-glass: rgba(255, 255, 255, 0.75);
+  --bg-glass-border: rgba(255, 255, 255, 0.6);
+
+  /* Text */
+  --text-primary: #111118;
+  --text-secondary: #4a4a62;
+  --text-muted: #8888a8;
+  --text-inverse: #ffffff;
+
+  /* Accent */
+  --accent-primary: #6c5ce7;
+  --accent-primary-hover: #5a4bd4;
+  --accent-primary-light: rgba(108, 92, 231, 0.12);
+  --accent-secondary: #fd79a8;
+  --accent-success: #00b894;
+  --accent-warning: #fdcb6e;
+  --accent-danger: #e17055;
+  --accent-info: #74b9ff;
+
+  /* Borders */
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.16);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.07);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.09);
+  --shadow-xl: 0 20px 60px rgba(0,0,0,0.18), 0 8px 20px rgba(0,0,0,0.10);
+
+  /* Radius */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Pane widths */
+  --pane-width: 420px;
+
+  /* Category / Event Colors */
+  --cat-meeting: #6c5ce7;
+  --cat-workshop: #00b894;
+  --cat-deadline: #e17055;
+  --cat-social: #fd79a8;
+  --cat-personal: #fdcb6e;
+  --cat-other: #74b9ff;
+  --cat-rtmp: #a29bfe;
+  --cat-internal: #55efc4;
+
+  /* Auth screen gradient */
+  --auth-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+/* ============================================
+   DARK THEME
+   ============================================ */
+[data-theme="dark"] {
+  --bg-primary: #0e0e16;
+  --bg-secondary: #15151f;
+  --bg-surface: #1c1c2a;
+  --bg-surface-2: #22222e;
+  --bg-overlay: rgba(0, 0, 0, 0.65);
+  --bg-glass: rgba(28, 28, 42, 0.85);
+  --bg-glass-border: rgba(255, 255, 255, 0.08);
+
+  --text-primary: #f0f0f8;
+  --text-secondary: #a8a8c8;
+  --text-muted: #5a5a78;
+  --text-inverse: #0e0e16;
+
+  --border-color: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,0.55), 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-xl: 0 20px 60px rgba(0,0,0,0.65), 0 8px 20px rgba(0,0,0,0.5);
+
+  --bg-glass: rgba(22, 22, 34, 0.88);
+  --bg-glass-border: rgba(255, 255, 255, 0.07);
+}

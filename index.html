@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Labs Calendar</title>
+  <meta name="description" content="Secure shared calendar for managing events, workshops, and sessions with PIN-protected access." />
+  <meta name="robots" content="noindex, nofollow" />
+
+  <!-- Preconnect -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+  <link rel="stylesheet" href="css/calendar.css" />
+  <link rel="stylesheet" href="css/panes.css" />
+  <link rel="stylesheet" href="css/datepicker.css" />
+</head>
+<body>
+
+  <!-- ============================
+       AUTH SCREEN
+       ============================ -->
+  <div id="auth-screen" role="main" aria-label="Authentication">
+    <div class="auth-card" role="form" aria-label="PIN entry form">
+      <div class="auth-logo" aria-hidden="true">📅</div>
+      <h1 class="auth-title">Labs Calendar</h1>
+      <p class="auth-subtitle">Enter your 6-digit PIN to access the calendar.</p>
+
+      <div class="pin-inputs" id="pin-inputs" role="group" aria-label="6-digit PIN entry">
+        <input class="pin-input" id="pin-0" type="number" inputmode="numeric" maxlength="1" min="0" max="9" autocomplete="off" aria-label="PIN digit 1" />
+        <input class="pin-input" id="pin-1" type="number" inputmode="numeric" maxlength="1" min="0" max="9" autocomplete="off" aria-label="PIN digit 2" />
+        <input class="pin-input" id="pin-2" type="number" inputmode="numeric" maxlength="1" min="0" max="9" autocomplete="off" aria-label="PIN digit 3" />
+        <input class="pin-input" id="pin-3" type="number" inputmode="numeric" maxlength="1" min="0" max="9" autocomplete="off" aria-label="PIN digit 4" />
+        <input class="pin-input" id="pin-4" type="number" inputmode="numeric" maxlength="1" min="0" max="9" autocomplete="off" aria-label="PIN digit 5" />
+        <input class="pin-input" id="pin-5" type="number" inputmode="numeric" maxlength="1" min="0" max="9" autocomplete="off" aria-label="PIN digit 6" />
+      </div>
+
+      <div class="auth-status" id="auth-status" role="status" aria-live="polite"></div>
+
+      <button class="auth-submit-btn" id="auth-submit-btn" type="button" aria-label="Verify PIN">
+        <span id="auth-btn-text">Verify Access</span>
+      </button>
+
+      <p class="auth-footer">Authorized personnel only.</p>
+    </div>
+  </div>
+
+  <!-- ============================
+       APP SCREEN
+       ============================ -->
+  <div id="app-screen" aria-label="Calendar application" role="main">
+
+    <!-- Header -->
+    <header id="app-header" role="banner">
+      <div class="header-left">
+        <div class="app-logo" aria-label="Labs Calendar">
+          <div class="app-logo-icon" aria-hidden="true">📅</div>
+          <span>Labs Calendar</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" id="theme-toggle-btn" title="Toggle dark/light mode" aria-label="Toggle theme">
+          <span id="theme-icon" aria-hidden="true">🌙</span>
+        </button>
+        <button class="icon-btn" id="refresh-btn" title="Refresh events" aria-label="Refresh events">
+          <span aria-hidden="true">🔄</span>
+        </button>
+        <button class="icon-btn" id="logout-btn" title="Sign out" aria-label="Sign out">
+          <span aria-hidden="true">🔒</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Calendar -->
+    <div id="calendar-container" role="region" aria-label="Calendar"></div>
+
+    <!-- FAB -->
+    <button id="fab-add" title="Add new event" aria-label="Add new event">
+      <span class="fab-icon" aria-hidden="true"></span>
+    </button>
+
+  </div>
+
+  <!-- ============================
+       OVERLAY
+       ============================ -->
+  <div id="overlay" role="presentation" aria-hidden="true"></div>
+
+  <!-- ============================
+       ADD / EDIT PANE
+       ============================ -->
+  <aside id="add-pane" class="side-pane" role="dialog" aria-modal="true" aria-label="Add event" aria-hidden="true">
+    <div class="pane-color-accent" id="add-pane-accent"></div>
+    <div class="pane-header">
+      <h2 class="pane-title" id="add-pane-title">New Event</h2>
+      <button class="pane-close-btn" id="add-pane-close" aria-label="Close pane">✕</button>
+    </div>
+
+    <div class="pane-body">
+      <form id="event-form" novalidate>
+
+        <!-- Basic Info -->
+        <div class="form-section">
+          <div class="form-group">
+            <label for="event-title">Event Title *</label>
+            <input type="text" id="event-title" placeholder="e.g. Relay Workshop 1" maxlength="200" required />
+          </div>
+
+          <div class="form-group">
+            <label for="event-service-type">Service Type</label>
+            <input type="text" id="event-service-type" placeholder="e.g. Human Interpretation + AI Captions" maxlength="200" />
+          </div>
+        </div>
+
+        <!-- Date & Time -->
+        <div class="form-section">
+          <div class="form-section-title">Date &amp; Time</div>
+          <div class="form-group">
+            <label for="event-start">Start *</label>
+            <input type="text" id="event-start" placeholder="Pick date and time" required />
+          </div>
+          <div class="form-group">
+            <label for="event-end">End</label>
+            <input type="text" id="event-end" placeholder="Pick date and time" />
+          </div>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="event-allday" style="width:auto" />
+              All-day event
+            </label>
+          </div>
+        </div>
+
+        <!-- Details -->
+        <div class="form-section">
+          <div class="form-section-title">Details</div>
+          <div class="form-group">
+            <label for="event-description">Description</label>
+            <textarea id="event-description" placeholder="Add notes or agenda..." maxlength="2000"></textarea>
+          </div>
+        </div>
+
+        <!-- Stream / RTMP -->
+        <div class="form-section">
+          <div class="form-section-title">Stream / RTMP</div>
+          <div class="form-group">
+            <label for="event-rtmp-link">Event Link</label>
+            <input type="url" id="event-rtmp-link" placeholder="https://..." maxlength="500" />
+          </div>
+          <div class="form-group">
+            <label for="event-stream-url">Stream URL (RTMP)</label>
+            <input type="url" id="event-stream-url" placeholder="rtmp://..." maxlength="500" />
+          </div>
+          <div class="form-group">
+            <label for="event-stream-key">Stream Key</label>
+            <input type="text" id="event-stream-key" placeholder="Stream key..." maxlength="500" />
+          </div>
+        </div>
+
+        <!-- Languages -->
+        <div class="form-section">
+          <div class="form-section-title">Languages</div>
+          <div class="form-row" style="margin-bottom:8px">
+            <div class="form-group" style="margin-bottom:0">
+              <label for="lang-code">Code</label>
+              <input type="text" id="lang-code" placeholder="e.g. en-US" maxlength="10" />
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label for="lang-name">Name</label>
+              <input type="text" id="lang-name" placeholder="e.g. English (US)" maxlength="80" />
+            </div>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" id="add-lang-btn" style="width:100%;margin-bottom:8px">+ Add Language</button>
+          <div class="lang-tags" id="lang-tags-container"></div>
+          <input type="hidden" id="event-languages" value="[]" />
+        </div>
+
+        <input type="hidden" id="event-id" value="" />
+
+      </form>
+    </div>
+
+    <div class="pane-footer">
+      <button class="btn btn-ghost" id="add-pane-cancel-btn">Cancel</button>
+      <button class="btn btn-primary" id="event-submit-btn">
+        <span id="event-submit-text">Create Event</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ============================
+       VIEW PANE
+       ============================ -->
+  <aside id="view-pane" class="side-pane" role="dialog" aria-modal="true" aria-label="Event details" aria-hidden="true">
+    <div class="pane-color-accent" id="view-pane-accent"></div>
+    <div class="pane-header">
+      <h2 class="pane-title">Event Details</h2>
+      <button class="pane-close-btn" id="view-pane-close" aria-label="Close pane">✕</button>
+    </div>
+
+    <div class="pane-body">
+      <div id="view-pane-content">
+        <!-- Populated dynamically by panes.js -->
+      </div>
+    </div>
+
+    <div class="pane-footer">
+      <button class="btn btn-danger btn-sm" id="delete-event-btn" aria-label="Delete event">🗑 Delete</button>
+      <button class="btn btn-ghost btn-sm" id="edit-event-btn" aria-label="Edit event">✏️ Edit</button>
+    </div>
+  </aside>
+
+  <!-- ============================
+       TOAST CONTAINER
+       ============================ -->
+  <div id="toast-container" role="region" aria-label="Notifications" aria-live="polite"></div>
+
+  <!-- ============================
+       CONFIRM DIALOG
+       ============================ -->
+  <div class="confirm-dialog" id="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+    <div class="confirm-box">
+      <span class="confirm-icon" id="confirm-icon">⚠️</span>
+      <h3 class="confirm-title" id="confirm-title">Confirm Action</h3>
+      <p class="confirm-message" id="confirm-message">Are you sure?</p>
+      <div class="confirm-actions">
+        <button class="btn btn-ghost btn-sm" id="confirm-cancel">Cancel</button>
+        <button class="btn btn-danger btn-sm" id="confirm-ok">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================
+       SCRIPTS
+       ============================ -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
