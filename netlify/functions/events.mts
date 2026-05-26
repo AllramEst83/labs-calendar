@@ -247,26 +247,17 @@ export default async (request: Request, context: Context) => {
 // ============================================================
 
 /**
- * Finds an event by ID by scanning recent months (up to 12 months back + 3 forward).
- * This avoids loading all blobs at once while still handling most real-world cases.
+ * Finds an event by ID by scanning all month blobs in the store.
  */
 async function findEventById(
   store: ReturnType<typeof getStore>,
   id: string
 ): Promise<{ found: boolean; foundKey?: string; foundEvent?: CalendarEvent }> {
-  // Generate keys for the past 12 months and next 3 months
-  const now = new Date();
-  const keys: string[] = [];
-  for (let i = -12; i <= 3; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    keys.push(`events-${y}-${m}`);
-  }
+  const { blobs } = await store.list({ prefix: 'events-' });
 
-  for (const key of keys) {
+  for (const { key } of blobs) {
     const events = await readMonthEvents(store, key);
-    const event  = events.find((e) => e.id === id);
+    const event = events.find((e) => e.id === id);
     if (event) {
       return { found: true, foundKey: key, foundEvent: event };
     }
