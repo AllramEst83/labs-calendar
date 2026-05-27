@@ -7,6 +7,7 @@
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 import { onThemeChange } from './theme.js';
+import { is12Hour } from './utils.js';
 
 /** @type {Map<string, import('flatpickr').Instance>} */
 const pickers = new Map();
@@ -23,10 +24,13 @@ function syncPickerTheme(fp) {
 function baseOptions(id) {
   return {
     enableTime: true,
-    time_24hr: true,
+    time_24hr: !is12Hour,
+    // dateFormat is the internal value format — always stored as 24-hour ISO-like.
     dateFormat: 'Y-m-d H:i',
     altInput: true,
-    altFormat: 'D, M j, Y · H:i',
+    // altFormat is the human-visible display: switch between 12-hour (g:i A)
+    // and 24-hour (H:i) to match the browser locale detected by is12Hour.
+    altFormat: is12Hour ? 'D, M j, Y · g:i A' : 'D, M j, Y · H:i',
     minuteIncrement: 5,
     allowInput: false,
     static: true,
