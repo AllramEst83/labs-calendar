@@ -14,7 +14,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 
 import { fetchEvents } from './api.js';
 import { showToast } from './toast.js';
-import { getCategoryColor, formatTime, getEventTimeslots } from './utils.js';
+import { getCategoryColor, formatTime, getEventTimeslots, is12Hour } from './utils.js';
 
 /** @type {Calendar|null} */
 let calendarInstance = null;
@@ -54,6 +54,21 @@ export function initCalendar({ onDateClick, onEventClick }) {
     height: '100%',
     nowIndicator: true,
     selectable: true,
+
+    // Slot axis labels in Week/Day views (e.g. "9:00 AM" or "09:00")
+    slotLabelFormat: {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: is12Hour,
+    },
+
+    // Time column in List/Agenda view
+    eventTimeFormat: {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: is12Hour,
+    },
+
     selectMirror: true,
     dayMaxEvents: 4,
     moreLinkClick: 'popover',

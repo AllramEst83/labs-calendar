@@ -3,6 +3,18 @@
  */
 
 /**
+ * Whether the user's browser locale uses 12-hour time.
+ *
+ * Detected once at module load using `Intl.DateTimeFormat.resolvedOptions()`.
+ * All time formatters in this module read this value so the display is
+ * consistent across every surface (event labels, view pane, FullCalendar axis,
+ * and the Flatpickr date-time picker).
+ *
+ * @type {boolean}
+ */
+export const is12Hour = new Intl.DateTimeFormat(undefined, { hour: 'numeric' }).resolvedOptions().hour12 ?? false;
+
+/**
  * Strip HTML tags from a string to prevent XSS before sending to the server.
  * @param {string} str
  * @returns {string}
@@ -33,7 +45,12 @@ export function formatDate(iso) {
 }
 
 /**
- * Format a Date or ISO datetime string as a time.
+ * Format a Date or ISO datetime string as a localized time string.
+ *
+ * Uses `is12Hour` to explicitly set the hour cycle so the output is consistent
+ * with every other time surface in the app regardless of how the browser
+ * locale normally renders `Intl` options.
+ *
  * @param {string|Date} value
  * @returns {string}
  */
@@ -41,8 +58,9 @@ export function formatTime(value) {
   if (!value) return '';
   try {
     return new Intl.DateTimeFormat(undefined, {
-      hour: '2-digit',
+      hour: 'numeric',
       minute: '2-digit',
+      hour12: is12Hour,
     }).format(value instanceof Date ? value : new Date(value));
   } catch {
     return String(value);
