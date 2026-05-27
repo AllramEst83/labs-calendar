@@ -4,8 +4,8 @@
  */
 
 const STORAGE_KEY = 'labs-calendar-theme';
-const ICON_DARK = '🌙';
-const ICON_LIGHT = '☀️';
+const ICON_SRC_DARK = '/icons/dark.svg';
+const ICON_SRC_LIGHT = '/icons/light.svg';
 
 /** @type {Set<(theme: string) => void>} */
 const listeners = new Set();
@@ -27,7 +27,9 @@ function getInitialTheme() {
 export function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   const icon = document.getElementById('theme-icon');
-  if (icon) icon.textContent = theme === 'dark' ? ICON_DARK : ICON_LIGHT;
+  if (icon instanceof HTMLImageElement) {
+    icon.src = theme === 'dark' ? ICON_SRC_DARK : ICON_SRC_LIGHT;
+  }
   localStorage.setItem(STORAGE_KEY, theme);
   listeners.forEach((fn) => fn(theme));
 }

@@ -158,7 +158,14 @@ input, textarea, select {
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
   transition: all var(--transition-fast);
-  font-size: 18px;
+}
+
+.btn-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  pointer-events: none;
 }
 
 .icon-btn:hover {
